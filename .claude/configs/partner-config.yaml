@@ -1,0 +1,182 @@
+# Partner Configuration (base_partner) - Configuration as Code
+# Format: YAML for parsing and automation
+# Standard: 2025 GitOps best practices
+# Version: 1.0.1
+# Last updated: 2025-10-03
+
+metadata:
+  object: Partner
+  table: base_partner
+  module: base
+  version: 1.0.1
+  created_date: 2025-10-03
+  created_by: Tanguy
+  changelog_ref: .claude/changelogs/studio-changelog.md#1.0.1
+  registry_ref: .claude/configuration-registry.md#11-partner-base_partner
+
+custom_fields:
+  - name: statutContact
+    type: Selection
+    label: Statut Contact
+    title: Statut Contact
+    selection_name: selection-statut-contact
+    storage:
+      type: json
+      column: attrs
+      json_key: statutContact
+
+    properties:
+      required: false
+      readonly: false
+      hidden: false
+      default: null
+      help: Type de relation commerciale avec l'entreprise
+
+    display:
+      show_in_grid: true
+      show_in_form: true
+      sequence: 100
+      group: classification
+
+    access:
+      studio_path: Configuration → Studio → Base → Partner → Custom Fields
+      studio_id: null  # À compléter après vérification
+
+    business:
+      purpose: Segmenter les entreprises par type de relation commerciale
+      use_cases:
+        - Filtrage ciblé pour campagnes marketing
+        - Reporting et analytics par type de client
+        - Workflows CRM conditionnels
+        - Tableau de bord commercial
+
+      impact: Améliore classification et gestion relation client
+
+    technical:
+      backward_compatible: true
+      migration_required: false
+      breaking_change: false
+
+      sql_access:
+        retrieve: "SELECT attrs->>'statutContact' FROM base_partner WHERE id = :id"
+        filter: "WHERE attrs->>'statutContact' = :status"
+        search: "WHERE attrs ? 'statutContact'"
+        count: "SELECT attrs->>'statutContact', COUNT(*) FROM base_partner GROUP BY 1"
+
+    validation:
+      - type: selection_value
+        rule: Must be one of defined selection values
+      - type: optional
+        rule: Can be null (no default value)
+
+selections:
+  - name: selection-statut-contact
+    module: base
+    used_by:
+      - object: Partner
+        field: statutContact
+
+    values:
+      - value: client
+        label: Client
+        sequence: 10
+        description: Client actif avec contrats en cours
+        color: null
+        icon: null
+
+      - value: partenaire
+        label: Partenaire
+        sequence: 20
+        description: Partenaire commercial ou technique
+        color: null
+        icon: null
+
+      - value: prospect
+        label: Prospect
+        sequence: 30
+        description: Lead qualifié ou prospect en cours
+        color: null
+        icon: null
+
+      - value: ancien-client
+        label: Ancien Client
+        sequence: 40
+        description: Client inactif ou churned
+        color: null
+        icon: null
+
+    future_values:
+      - value: autre
+        label: Autre
+        sequence: 50
+        planned: true
+        planned_version: 1.1.0
+        description: Catégorie générique pour cas non couverts
+
+workflows:
+  # Workflows utilisant ce champ (à compléter lors de création)
+  planned:
+    - name: PartnerStatusChangeNotification
+      trigger: Partner.statutContact changes
+      action: Send notification to account manager
+      planned_version: 1.2.0
+
+integrations:
+  # Intégrations externes utilisant ce champ (à compléter)
+  planned: []
+
+views:
+  # Personnalisations de vues (à compléter)
+  planned:
+    - view: partner-form
+      section: classification
+      position: after_contact_info
+      planned_version: 1.1.0
+
+reports:
+  # Rapports utilisant ce champ (à compléter)
+  planned:
+    - name: PartnersByStatus
+      type: bar_chart
+      description: Distribution partenaires par statut
+      planned_version: 1.2.0
+
+documentation:
+  user_guide: |
+    Le champ "Statut Contact" permet de classifier les entreprises selon leur
+    relation commerciale avec votre agence IA:
+
+    - **Client**: Entreprise avec contrats actifs
+    - **Partenaire**: Partenaire commercial ou technique (pas forcément client)
+    - **Prospect**: Lead qualifié en cours de négociation
+    - **Ancien Client**: Client inactif ou ayant arrêté la collaboration
+
+    Ce champ est optionnel mais recommandé pour faciliter le filtrage et
+    le reporting dans le CRM.
+
+  admin_notes: |
+    Champ stocké dans la colonne JSON `attrs` via MetaJsonField.
+    Pas d'impact sur performances car indexé par défaut.
+
+    Pour ajouter/modifier valeurs selection:
+    1. Configuration → Studio → Base → Partner → Custom Fields
+    2. Cliquer sur statutContact
+    3. Éditer Selection Values
+    4. Mettre à jour ce fichier YAML
+    5. Commit avec message conventionnel
+
+version_history:
+  - version: 1.0.1
+    date: 2025-10-03
+    changes:
+      - type: Added
+        description: Initial creation of statutContact field
+        author: Tanguy
+        commit: null  # À compléter après commit
+
+  # Futurs changements
+  # - version: 1.1.0
+  #   date: TBD
+  #   changes:
+  #     - type: Added
+  #       description: New value "autre" in selection

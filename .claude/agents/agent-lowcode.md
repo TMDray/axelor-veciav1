@@ -364,12 +364,77 @@ Request:
 
 [Provide SQL examples from KB]
 
-## Step 4: Post-Creation
+## Step 4: Post-Creation Tracking (GitOps 2025)
 
-⚠️ After creation in Studio:
-1. Note the generated ID technique
-2. Update `configuration-registry.md` Section "Custom Fields - Partner"
-3. Add SQL queries tested in registry
+⚠️ **MANDATORY**: After creation in Studio, you MUST document immediately:
+
+### 4.1 Update studio-changelog.md
+
+Add entry in `.claude/changelogs/studio-changelog.md` section `[Unreleased]`:
+
+\`\`\`markdown
+## [Unreleased]
+
+### Added
+
+#### Partner.statutContact (Selection Field)
+
+**Business Context:**
+- Purpose: Segmenter entreprises par type relation commerciale
+- Use case: Filtrage campagnes, reporting, workflows CRM
+
+**Technical Details:**
+- Object: Partner (base_partner)
+- Field name: statutContact
+- Type: Selection
+- Storage: JSON (attrs column)
+- Created: 2025-10-03
+
+**SQL Queries:**
+\`\`\`sql
+-- Retrieve all partners with status
+SELECT id, full_name, attrs->>'statutContact' AS statut
+FROM base_partner
+WHERE attrs ? 'statutContact';
+\`\`\`
+
+**Studio ID**: [TO_BE_FILLED after checking in Studio]
+\`\`\`
+
+### 4.2 Update configuration-registry.md
+
+Update `.claude/configuration-registry.md`:
+- Section "Custom Fields - Partner" → Add table row
+- Section "Selections" → Add selection details
+- Section "Overview" → Increment counter
+
+### 4.3 Verify YAML Config
+
+Check that `.claude/configs/partner-config.yaml` exists and is up-to-date.
+If not, generate it using template `.claude/configs/templates/custom-field-template.yaml`.
+
+### 4.4 Propose Git Commit
+
+Prepare conventional commit message:
+
+\`\`\`bash
+feat(studio): add Partner status classification
+
+- Created selection field statutContact on Partner (base_partner)
+- Values: client, partenaire, prospect, ancien-client
+- Storage: JSON attrs column (backward compatible)
+- Updated configuration-registry.md and studio-changelog.md
+- Generated partner-config.yaml
+
+See .claude/changelogs/studio-changelog.md for details
+\`\`\`
+
+### 4.5 Reminder to User
+
+Remind user to:
+1. Execute commit after validating documentation
+2. Run `./scripts/validate-configs.sh` to check consistency
+3. Optionally run `./scripts/sync-studio-to-git.sh` to verify DB ↔ Git sync
 ```
 
 ### When User Contacts You Directly

@@ -1,0 +1,166 @@
+# Custom Field Configuration Template
+# Use this template when creating new custom fields in Axelor Studio
+# Format: YAML for Configuration as Code
+# Standard: 2025 GitOps best practices
+
+metadata:
+  object: ObjectName  # e.g., Partner, Lead, Opportunity
+  table: table_name   # e.g., base_partner, crm_lead
+  module: module_name # e.g., base, crm, sale
+  version: 0.0.0      # Semantic versioning
+  created_date: YYYY-MM-DD
+  created_by: YourName
+  changelog_ref: .claude/changelogs/studio-changelog.md#version
+  registry_ref: .claude/configuration-registry.md#section
+
+custom_fields:
+  - name: fieldName  # camelCase format
+    type: FieldType  # String, Integer, Decimal, Boolean, Date, DateTime, Selection, ManyToOne, etc.
+    label: Field Label
+    title: Field Title
+    selection_name: selection-name  # If type = Selection
+    storage:
+      type: json | column  # json = attrs column, column = dedicated column
+      column: attrs        # Column name (usually "attrs" for custom fields)
+      json_key: fieldName  # Key in JSON (if storage.type = json)
+
+    properties:
+      required: false     # true | false
+      readonly: false     # true | false
+      hidden: false       # true | false
+      default: null       # Default value or null
+      help: Help text shown in UI
+      min: null           # For numeric types
+      max: null           # For numeric types
+      precision: null     # For Decimal type (total digits)
+      scale: null         # For Decimal type (decimal places)
+
+    display:
+      show_in_grid: true   # Show in list/grid view
+      show_in_form: true   # Show in form view
+      sequence: 100        # Order in form (higher = later)
+      group: null          # Group name in form
+      widget: null         # Custom widget if needed
+      show_if: null        # Conditional display (Groovy expression)
+      hide_if: null        # Conditional hide (Groovy expression)
+      required_if: null    # Conditional required (Groovy expression)
+
+    access:
+      studio_path: Configuration → Studio → Module → Object → Custom Fields
+      studio_id: null      # Studio internal ID (fill after creation)
+
+    business:
+      purpose: Why this field is needed
+      use_cases:
+        - Use case 1
+        - Use case 2
+      impact: Business impact description
+
+    technical:
+      backward_compatible: true  # true | false
+      migration_required: false  # true | false
+      breaking_change: false     # true | false
+
+      sql_access:
+        retrieve: "SELECT ..."  # Query to retrieve value
+        filter: "WHERE ..."     # Query to filter by value
+        search: "WHERE ..."     # Query to search
+        count: "SELECT ..."     # Query to count by value
+
+    validation:
+      - type: validation_type
+        rule: Validation rule description
+
+# Selections (if custom field uses Selection type)
+selections:
+  - name: selection-name  # kebab-case with "selection-" prefix
+    module: module_name
+    used_by:
+      - object: ObjectName
+        field: fieldName
+
+    values:
+      - value: value1
+        label: Label 1
+        sequence: 10
+        description: Description of this value
+        color: null      # Hex color code if needed
+        icon: null       # Icon name if needed
+
+      - value: value2
+        label: Label 2
+        sequence: 20
+        description: Description of this value
+
+    future_values:
+      - value: futureValue
+        label: Future Label
+        sequence: 30
+        planned: true
+        planned_version: x.y.z
+        description: Description
+
+# Related Workflows (if any)
+workflows:
+  planned: []
+  # - name: WorkflowName
+  #   trigger: When this field changes
+  #   action: What happens
+  #   planned_version: x.y.z
+
+# Related Integrations (if any)
+integrations:
+  planned: []
+  # - name: IntegrationName
+  #   system: External system
+  #   mapping: How field is mapped
+  #   planned_version: x.y.z
+
+# Related Views (if any)
+views:
+  planned: []
+  # - view: view-name
+  #   section: section_name
+  #   position: after_field_x
+  #   planned_version: x.y.z
+
+# Related Reports (if any)
+reports:
+  planned: []
+  # - name: ReportName
+  #   type: chart_type
+  #   description: Report description
+  #   planned_version: x.y.z
+
+# Documentation
+documentation:
+  user_guide: |
+    User-facing documentation explaining:
+    - What this field is for
+    - How to use it
+    - What each value means (if selection)
+    - When to fill it
+
+  admin_notes: |
+    Technical notes for administrators:
+    - Storage details
+    - Performance considerations
+    - Maintenance instructions
+    - How to modify
+
+# Version History
+version_history:
+  - version: 0.0.1
+    date: YYYY-MM-DD
+    changes:
+      - type: Added | Changed | Removed | Fixed
+        description: What changed
+        author: YourName
+        commit: git_commit_hash
+
+  # Future versions
+  # - version: 0.1.0
+  #   date: YYYY-MM-DD
+  #   changes:
+  #     - type: Added
+  #       description: New feature
