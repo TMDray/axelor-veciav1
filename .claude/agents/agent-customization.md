@@ -98,6 +98,45 @@ Vous êtes l'**expert technique** pour toute customisation Axelor nécessitant d
 3. Vérifier pas d'espaces, underscores, ou caractères spéciaux
 ```
 
+### Étape 3.5 : Valider Noms de Vues (CRITIQUE ⚠️)
+
+**⚠️ IMPORTANT** : Si création action-view utilisant vues Axelor, **TOUJOURS** vérifier noms standards
+
+**Action OBLIGATOIRE** :
+```
+1. Consulter kb-axelor-views-standards.md
+2. Identifier modèle cible (Partner, Lead, SaleOrder, etc.)
+3. Trouver vues standards correspondantes
+4. NE JAMAIS inventer des noms de vues
+```
+
+**Exemple Partner (Cas Fréquent)** :
+```xml
+<!-- ❌ INCORRECT (n'existe pas) -->
+<view type="grid" name="contact-grid"/>
+<view type="form" name="contact-form"/>
+
+<!-- ✅ CORRECT (vues standards) -->
+<view type="grid" name="partner-contact-grid"/>
+<view type="form" name="partner-contact-form"/>
+```
+
+**Vues Partner Standards** :
+- `partner-grid` / `partner-form` → Tous partners
+- `partner-contact-grid` / `partner-contact-form` → Contacts (personnes)
+- `partner-customer-grid` → Clients uniquement
+- `partner-supplier-grid` → Fournisseurs uniquement
+
+**Validation Commande** (optionnel si doute) :
+```bash
+# Lister vues Partner disponibles
+docker cp axelor-vecia-app:/usr/local/tomcat/webapps/ROOT/WEB-INF/lib/axelor-base-8.3.15.jar /tmp/
+unzip -l /tmp/axelor-base-8.3.15.jar | grep -i "partner.*xml"
+```
+
+**Si vue standard n'existe pas** :
+→ Utiliser vue proche + filtrer avec `<domain>` au lieu de créer nouvelle vue
+
 ### Étape 4 : Créer Structure Module Custom
 
 **Si nouveau module custom nécessaire** :

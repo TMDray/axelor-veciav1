@@ -294,6 +294,112 @@ build/
 
 ---
 
+## 🚨 Troubleshooting - Cache Axelor Database
+
+### Problème : Vues/Actions Pas Importées Après Rebuild
+
+**Symptômes** :
+- ✅ Module custom chargé (logs : `Loading package axelor-vecia-crm`)
+- ❌ Aucun import Menu.xml dans logs (`Importing: ...Menu.xml` absent)
+- ❌ Actions/Menus absents en DB (`SELECT * FROM meta_action WHERE module = '...'` → 0 rows)
+- ❌ Menus invisibles dans UI ou erreurs 500
+
+**Root Cause** :
+Axelor importe les vues XML en base **uniquement au premier démarrage**. Si une vue/action avec le même nom existe déjà en DB, Axelor **ne la met PAS à jour automatiquement**, même après rebuild.
+
+### Solution 1 : Clear Cache Spécifique (Recommandé)
+
+**Étape 1 - Identifier module et vues impactées** :
+```bash
+# Vérifier si module chargé
+docker-compose logs axelor | grep "Loading package axelor-vecia"
+# → Si présent : module OK, problème = cache DB
+
+# Vérifier actions en DB
+docker-compose exec postgres psql -U axelor -d axelor_vecia \
+  -c "SELECT name, module FROM meta_action WHERE module = 'axelor-vecia-crm';"
+# → Si vide : actions pas importées
+```
+
+**Étape 2 - Supprimer cache module** :
+```bash
+docker-compose exec postgres psql -U axelor -d axelor_vecia <<EOF
+-- Supprimer vues custom module
+DELETE FROM meta_view WHERE module = 'axelor-vecia-crm';
+
+-- Supprimer actions custom module
+DELETE FROM meta_action WHERE module = 'axelor-vecia-crm';
+
+-- Supprimer menus custom module
+DELETE FROM meta_menu WHERE module = 'axelor-vecia-crm';
+
+-- Vérifier suppression
+SELECT 'meta_view' as table, COUNT(*) FROM meta_view WHERE module = 'axelor-vecia-crm'
+UNION ALL
+SELECT 'meta_action', COUNT(*) FROM meta_action WHERE module = 'axelor-vecia-crm'
+UNION ALL
+SELECT 'meta_menu', COUNT(*) FROM meta_menu WHERE module = 'axelor-vecia-crm';
+-- → Doit retourner 0, 0, 0
+EOF
+```
+
+**Étape 3 - Restart container pour reimport** :
+```bash
+docker-compose restart axelor
+sleep 30  # Attendre démarrage complet
+
+# Vérifier import réussi
+docker-compose logs axelor | grep -E "Importing.*vecia.*Menu|Loading.*vecia"
+```
+
+**Temps estimé** : 2-3 min
+
+---
+
+### Solution 2 : Clean Install Complet (Si Solution 1 Échoue)
+
+**⚠️ ATTENTION** : Supprime TOUTE la base (perte données dev)
+
+```bash
+# Arrêter et supprimer volumes
+docker-compose down -v
+
+# Vérifier volumes supprimés
+docker volume ls | grep axelor-vecia
+# → Ne doit rien retourner
+
+# Fresh start
+docker-compose up -d
+sleep 60  # Attendre initialisation DB
+
+# Vérifier import
+docker-compose logs axelor | grep -E "Importing.*Menu|Loading package"
+```
+
+**Temps estimé** : 3-5 min
+
+**Cas d'usage** :
+- Solution 1 ne fonctionne pas
+- Corruption DB plus profonde
+- Besoin reset complet environnement dev
+
+---
+
+### Prévention : Quand Clear Cache ?
+
+**Toujours clear cache si** :
+- ✅ Modification nom vue existante (`contact-grid` → `partner-contact-grid`)
+- ✅ Modification action-view existante
+- ✅ Modification menu existant
+- ✅ Rebuild après fix erreur import précédent
+
+**Pas besoin clear cache si** :
+- ❌ Ajout nouveau module (première fois)
+- ❌ Modification code Java/Groovy uniquement
+- ❌ Modification domain filter (si nom vue inchangé)
+
+---
+
 ## 🧪 Commandes de Diagnostic
 
 ### Module Compilé Localement?

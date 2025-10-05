@@ -28,8 +28,8 @@
   <!-- Action View: All Contacts -->
   <action-view name="action-vecia-crm-view-all-contacts" title="All Contacts"
     model="com.axelor.apps.base.db.Partner">
-    <view type="grid" name="contact-grid"/>
-    <view type="form" name="contact-form"/>
+    <view type="grid" name="partner-contact-grid"/>
+    <view type="form" name="partner-contact-form"/>
     <domain>self.isContact = true AND self.isEmployee = false</domain>
     <context name="_showRecord" expr="eval: id"/>
   </action-view>

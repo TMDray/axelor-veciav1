@@ -7,17 +7,28 @@
 - Docker multi-stage build with custom module support
 - Agent system: agent-docker-custom-modules v2.0.0 for Docker deployment validation
 - Knowledge base: kb-docker-custom-modules.md with deployment best practices
+- **Knowledge base: kb-axelor-views-standards.md** - Comprehensive catalog of Axelor standard view names
 
 ### Fixed
 - **Critical**: Docker build now includes custom modules (Dockerfile COPY configuration)
 - **Critical**: Custom modules now properly packaged in WAR (settings.gradle appModules configuration)
+- **Critical**: Menu.xml view names corrected (`contact-grid` → `partner-contact-grid`, `contact-form` → `partner-contact-form`)
+- **Critical**: Axelor database cache issue preventing view reimport after modification (documented clean install solution)
 - Docker Desktop macOS port forwarding issue documented (requires restart after `--no-cache` builds)
 
 ### Documentation
 - REX complet: Déploiement modules custom dans Docker (2 problèmes critiques identifiés et résolus)
+- **REX complet: Fix Menu "All Contacts" - Erreur View Names** (/tmp/contact-grid-view-fix-rex.md)
+  - Root causes: invented view names + Axelor DB cache behavior
+  - 55 min debugging session (10x overhead - should have been 5 min)
+  - Complete timeline with 3 diagnostic attempts
+  - Prevention workflows documented
 - Procédure de validation 7 niveaux (compilation → UI)
 - Scripts de pré-validation et post-déploiement
 - Analyse pattern bug Docker Desktop macOS (100% corrélation avec `--no-cache`)
+- **kb-axelor-views-standards.md**: Pattern naming `{model}-{variant}-{type}`, vues standards Partner/Lead/Opportunity/SaleOrder
+- **agent-customization.md**: Nouvelle étape 3.5 "Valider Noms de Vues" (checklist obligatoire avant création action-view)
+- **kb-docker-custom-modules.md**: Troubleshooting cache Axelor DB (2 solutions: clear cache SQL / clean install)
 
 See `.claude/changelogs/studio-changelog.md` for detailed technical changes.
 
