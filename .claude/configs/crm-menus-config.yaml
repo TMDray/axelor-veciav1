@@ -1,0 +1,94 @@
+metadata:
+  module: axelor-vecia-crm
+  type: custom_module
+  version: 1.0.0
+  created: 2025-10-05
+  description: Custom CRM menus for quick access to all Partners and Contacts
+  approach: code_based_xml
+  agent: agent-customization
+
+menus:
+  - name: crm-all-partners
+    parent: crm-root
+    title: "All Partners"
+    action: action-vecia-crm-view-all-partners
+    order: 5
+    model: com.axelor.apps.base.db.Partner
+    domain: "self.isContact = false"
+    conditional: "__config__.app.isApp('crm')"
+    views:
+      - type: grid
+        name: partner-grid
+      - type: form
+        name: partner-form
+    context:
+      - name: _showRecord
+        expr: "eval: id"
+
+  - name: crm-all-contacts
+    parent: crm-root
+    title: "All Contacts"
+    action: action-vecia-crm-view-all-contacts
+    order: 6
+    model: com.axelor.apps.base.db.Partner
+    domain: "self.isContact = true AND self.isEmployee = false"
+    conditional: "__config__.app.isApp('crm')"
+    views:
+      - type: grid
+        name: contact-grid
+      - type: form
+        name: contact-form
+    context:
+      - name: _showRecord
+        expr: "eval: id"
+
+actions:
+  - name: action-vecia-crm-view-all-partners
+    title: "All Partners"
+    model: com.axelor.apps.base.db.Partner
+    views:
+      - grid: partner-grid
+      - form: partner-form
+    domain: "self.isContact = false"
+
+  - name: action-vecia-crm-view-all-contacts
+    title: "All Contacts"
+    model: com.axelor.apps.base.db.Partner
+    views:
+      - grid: contact-grid
+      - form: contact-form
+    domain: "self.isContact = true AND self.isEmployee = false"
+
+configuration_files:
+  menu_xml: /modules/axelor-vecia-crm/src/main/resources/views/Menu.xml
+  module_properties: /modules/axelor-vecia-crm/src/main/resources/module.properties
+  build_gradle: /modules/axelor-vecia-crm/build.gradle
+  readme: /modules/axelor-vecia-crm/README.md
+
+installation:
+  settings_gradle: "include ':modules:axelor-vecia-crm'"
+  build_command: "./gradlew clean build"
+  deploy_command: "docker-compose up -d --build"
+
+testing:
+  menu_all_partners:
+    navigation: "CRM → All Partners"
+    expected: "Display all companies (isContact = false)"
+  menu_all_contacts:
+    navigation: "CRM → All Contacts"
+    expected: "Display all persons (isContact = true), excluding employees"
+
+advantages:
+  - Versioned in Git (reproductible)
+  - Survives Axelor upgrades
+  - Multi-environment deployment (dev, test, prod)
+  - CI/CD compatible
+  - Code review friendly
+  - No manual UI configuration required
+
+references:
+  registry: .claude/configuration-registry.md
+  changelog: .claude/changelogs/studio-changelog.md
+  main_changelog: CHANGELOG.md
+  agent: .claude/agents/agent-customization.md
+  workflow: .claude/docs/workflow-configuration-tracking.md

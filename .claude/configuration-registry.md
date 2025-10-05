@@ -14,6 +14,7 @@ This document is the **central inventory** of all configurations created in Axel
 |----------|-------|--------------|
 | **Custom Fields** | 1 | 2025-10-03 |
 | **Selections** | 1 | 2025-10-03 |
+| **Custom Menus** | 2 | 2025-10-05 |
 | **BPM Workflows** | 0 | - |
 | **API Integrations** | 0 | - |
 | **Custom Models** | 0 | - |
@@ -134,7 +135,110 @@ created_date: 2025-10-03
 
 ---
 
-## 3. BPM Workflows
+## 3. Custom Menus (Code-based)
+
+### 3.1 CRM Menus
+
+| Menu Name | Parent | Module | Model | Domain Filter | Created | Status |
+|-----------|--------|--------|-------|---------------|---------|--------|
+| `crm-all-partners` | crm-root | axelor-vecia-crm | Partner | `self.isContact = false` | 2025-10-05 | ✅ Active |
+| `crm-all-contacts` | crm-root | axelor-vecia-crm | Partner | `self.isContact = true AND self.isEmployee = false` | 2025-10-05 | ✅ Active |
+
+**Details: crm-all-partners**
+
+```yaml
+menu_name: crm-all-partners
+parent: crm-root
+title: "All Partners"
+action: action-vecia-crm-view-all-partners
+module: axelor-vecia-crm
+model: com.axelor.apps.base.db.Partner
+domain: "self.isContact = false"
+order: 5
+conditional: "__config__.app.isApp('crm')"
+
+views:
+  - type: grid
+    name: partner-grid
+  - type: form
+    name: partner-form
+
+purpose: |
+  Provide quick access to ALL companies directly from CRM main menu.
+  Replaces unintuitive "Application Config → Referential → Partners" navigation.
+
+business_impact: Improved UX for CRM users
+approach: code_based_xml
+file: /modules/axelor-vecia-crm/src/main/resources/views/Menu.xml
+created_date: 2025-10-05
+agent: agent-customization
+```
+
+**Details: crm-all-contacts**
+
+```yaml
+menu_name: crm-all-contacts
+parent: crm-root
+title: "All Contacts"
+action: action-vecia-crm-view-all-contacts
+module: axelor-vecia-crm
+model: com.axelor.apps.base.db.Partner
+domain: "self.isContact = true AND self.isEmployee = false"
+order: 6
+conditional: "__config__.app.isApp('crm')"
+
+views:
+  - type: grid
+    name: contact-grid
+  - type: form
+    name: contact-form
+
+purpose: |
+  Provide quick access to ALL contacts (persons) directly from CRM main menu.
+  Excludes employees for cleaner contact list.
+
+business_impact: Improved UX for CRM users
+approach: code_based_xml
+file: /modules/axelor-vecia-crm/src/main/resources/views/Menu.xml
+created_date: 2025-10-05
+agent: agent-customization
+```
+
+**Module Configuration**
+
+```yaml
+module_name: axelor-vecia-crm
+version: 1.0.0
+type: custom_module
+dependencies:
+  - axelor-base (Partner model)
+  - axelor-crm (CRM app)
+
+files:
+  menu_xml: /modules/axelor-vecia-crm/src/main/resources/views/Menu.xml
+  module_properties: /modules/axelor-vecia-crm/src/main/resources/module.properties
+  build_gradle: /modules/axelor-vecia-crm/build.gradle
+  readme: /modules/axelor-vecia-crm/README.md
+
+installation:
+  settings_gradle: "include ':modules:axelor-vecia-crm'"
+  build_command: "./gradlew clean build"
+  deploy_command: "docker-compose up -d --build"
+
+advantages:
+  - Versioned in Git (reproductible)
+  - Survives Axelor upgrades (not lost on update)
+  - Multi-environment deployment (dev, test, prod)
+  - CI/CD compatible
+  - Code review friendly
+
+config_file: .claude/configs/crm-menus-config.yaml
+changelog_ref: .claude/changelogs/studio-changelog.md#unreleased
+```
+
+---
+
+## 4. BPM Workflows
 
 _Aucun workflow créé pour le moment._
 

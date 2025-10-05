@@ -277,6 +277,46 @@ Located in: `.claude/agents/`
 
 ---
 
+### 5. **agent-customization.md** (Code Customization Agent)
+
+**Type**: Routing Agent (Technical - Code-Based)
+**Expertise**: Axelor code customization (XML, modules, menus, views)
+
+**Role**:
+- Create custom Axelor modules (axelor-vecia-*)
+- Generate XML configurations (Menu.xml, views, actions)
+- Configure build system (build.gradle, settings.gradle)
+- Implement code-based customizations (production-ready)
+- Provide alternative to Studio for pérennité and CI/CD
+
+**When to use**:
+- "Add custom menu to CRM"
+- "Create custom module for specific domain"
+- "Generate XML menu configuration"
+- "Override Axelor default menus/views"
+- "Production-ready code customization"
+
+**Key Capabilities**:
+- Custom module creation (complete structure)
+- Menu.xml generation (menuitems, action-views, domain filters)
+- Custom views (grid, form, calendar, kanban)
+- Build configuration (Gradle, module dependencies)
+- Domain filter expertise (filtering Partners, Leads, etc.)
+- Best practices for XML naming and structure
+- Documentation (CHANGELOG, registry, YAML configs)
+
+**Code vs Studio Decision**:
+- ✅ **Code (this agent)**: Production, multi-env, CI/CD, versioning, reproductibility
+- ⚠️ **Studio (agent-lowcode)**: Prototyping, POC, quick tests, learning
+
+**Collaboration**:
+- Delegates Groovy/Java logic to agent-lowcode
+- Uses kb-lowcode-standards.md for naming validation
+- Consults configuration-registry.md to avoid duplication
+- Works with agent-configuration for functional requirements
+
+---
+
 ## 🔄 Agent Collaboration Patterns
 
 ### Pattern 1: Functional → Technical Handoff
@@ -344,7 +384,13 @@ agent-deploiement:
 ```
 Question about...
 
-┌─ Low-code/Technical (How to implement?)
+┌─ Code Customization (Menus, Modules, XML, Production-ready?)
+│  └─> agent-customization
+│      ├─ Custom modules (axelor-vecia-*)
+│      ├─ Menu.xml, views, actions
+│      └─ Build configuration (Gradle)
+│
+├─ Low-code/Studio (Prototyping, How to implement in Studio?)
 │  └─> agent-lowcode
 │      ├─ Custom fields → kb-studio-architecture.md
 │      ├─ Workflows → kb-bpm-workflows.md
@@ -419,8 +465,10 @@ Question about...
 │   └── kb-sales-customization.md  # Sales for AI agency
 │
 ├── agents/                        # Specialized routing/functional agents
+│   ├── agent-customization.md     # Code customization (menus, modules, XML)
 │   ├── agent-lowcode.md           # Technical router (Studio, BPM, Integrations)
 │   ├── agent-crm.md               # CRM functional configuration
+│   ├── agent-configuration.md     # Configuration validation and orchestration
 │   ├── agent-data-management.md   # Data import/export/migration
 │   ├── agent-deploiement.md       # Deployment and infrastructure
 │   ├── README.md                  # This file
@@ -441,6 +489,7 @@ Question about...
 - `agent-finance.md`: Financial module configuration (accounting, invoicing)
 - `agent-hr.md`: HR module configuration (employees, timesheets)
 - `agent-testing.md`: Automated testing and quality assurance
+- `agent-configuration.md`: ALREADY CREATED - Configuration validation and orchestration
 
 ### Potential New KBs:
 - `kb-finance-customization.md`: Financial module customization for AI agency

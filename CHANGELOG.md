@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Added
+- Custom CRM menus: All Partners and All Contacts (axelor-vecia-crm module)
+- Direct access to complete Partner and Contact lists from CRM main menu
+- Domain-filtered views for better UX
+
+See `.claude/changelogs/studio-changelog.md` for detailed technical changes.
+
+---
+
 ## [8.3.15] (2025-09-11)
 
 ### Fixes

@@ -9,6 +9,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### CRM Menus - All Partners & All Contacts (Code-based Module)
+
+**Business Context:**
+- **Purpose**: Provide quick access to ALL companies and ALL contacts directly from CRM menu
+- **Use case**: Replace unintuitive "Application Config → Referential → Partners" navigation
+- **Impact**: Improved UX - Users can now access complete Partner and Contact lists from CRM main menu
+
+**Technical Details:**
+- **Module**: axelor-vecia-crm (custom module v1.0.0)
+- **Type**: Code-based customization (XML Menu.xml)
+- **File**: `/modules/axelor-vecia-crm/src/main/resources/views/Menu.xml`
+- **Dependencies**: axelor-base (Partner model), axelor-crm (CRM app)
+
+**Menu 1: All Partners**
+- **Name**: `crm-all-partners`
+- **Parent**: `crm-root`
+- **Title**: "All Partners"
+- **Action**: `action-vecia-crm-view-all-partners`
+- **Model**: `com.axelor.apps.base.db.Partner`
+- **Domain**: `self.isContact = false` (companies only)
+- **Views**: partner-grid, partner-form (Axelor base views)
+- **Order**: 5
+- **Conditional**: `if="__config__.app.isApp('crm')"`
+
+**Menu 2: All Contacts**
+- **Name**: `crm-all-contacts`
+- **Parent**: `crm-root`
+- **Title**: "All Contacts"
+- **Action**: `action-vecia-crm-view-all-contacts`
+- **Model**: `com.axelor.apps.base.db.Partner`
+- **Domain**: `self.isContact = true AND self.isEmployee = false` (persons only, excluding employees)
+- **Views**: contact-grid, contact-form (Axelor base views)
+- **Order**: 6
+- **Conditional**: `if="__config__.app.isApp('crm')"`
+
+**Configuration Files:**
+- Menu.xml: `/modules/axelor-vecia-crm/src/main/resources/views/Menu.xml`
+- module.properties: `/modules/axelor-vecia-crm/src/main/resources/module.properties`
+- build.gradle: `/modules/axelor-vecia-crm/build.gradle`
+- settings.gradle: Include directive added
+
+**Installation:**
+1. Module added to `settings.gradle`: `include ':modules:axelor-vecia-crm'`
+2. Build: `./gradlew clean build`
+3. Deploy: `docker-compose up -d --build`
+
+**Testing:**
+- Navigation: CRM → All Partners (displays all companies)
+- Navigation: CRM → All Contacts (displays all persons, excluding employees)
+- Domain filters: Verified correct filtering
+
+**Advantages over Studio:**
+- ✅ Versioned in Git (reproductible)
+- ✅ Survives Axelor upgrades (not lost on update)
+- ✅ Multi-environment deployment (dev, test, prod)
+- ✅ CI/CD compatible
+- ✅ Code review friendly
+
+**Created**: 2025-10-05
+**Module Version**: 1.0.0
+**Agent**: agent-customization
+
+---
+
 ### Planned
 - Partner: Additional selection value "autre" for statutContact
 - Lead: Custom fields for AI maturity tracking

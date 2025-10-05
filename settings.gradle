@@ -70,3 +70,6 @@ modules.each { dir ->
   include "modules:$dir.name"
   project(":modules:$dir.name").projectDir = dir
 }
+
+// Custom Vecia module
+include ':modules:axelor-vecia-crm'
