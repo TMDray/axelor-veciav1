@@ -121,20 +121,87 @@ git checkout v8.3.15
 # Accès : http://localhost:8080/
 # Login : admin / admin
 
-# ⚠️ IMPORTANT : Tous les modules sont déjà inclus !
-# Action suivante : Activer les modules nécessaires via Menu → Apps
+# ⚠️ IMPORTANT : Tous les modules sont compilés dans le code !
+# Action suivante : Installer les Apps via Apps Management
 ```
 
-#### Activation Modules
+#### 🔑 Distinction Critique : Module vs App
 
-Après compilation et lancement :
+**Concept fondamental Axelor** :
 
-1. **Se connecter** : http://localhost:8080/ (admin/admin)
-2. **Menu** → **Apps**
-3. **Activer modules** : CRM, Sales, Project, etc.
-4. **Configurer** selon besoins
+| Aspect | **Module** (Code) | **App** (Base de données) |
+|--------|-------------------|---------------------------|
+| **Définition** | Code Java compilé via Gradle | Application installée et activée |
+| **Localisation** | `modules/axelor-*/` (disque) | Table `studio_app` (PostgreSQL) |
+| **Configuration** | `settings.gradle` | Apps Management (interface) |
+| **État initial** | ✅ Compilé après build | ❌ Non installée (active=false) |
+| **Accès** | N/A (code source) | ✅ Menus visibles après installation |
 
-⚠️ **Les modules ne sont PAS à installer** - ils sont déjà dans le code source !
+**Architecture** :
+```
+Compilation Gradle → Tous les modules compilés (settings.gradle)
+     ↓
+Premier démarrage → BASE crée TOUTES les tables (466 tables)
+     ↓
+Apps enregistrées → studio_app (active=false)
+     ↓
+⚠️ Installation manuelle requise → Via Apps Management
+     ↓
+Apps activées → active=true, menus visibles, init-data chargées
+```
+
+📖 **Documentation technique complète** : `.claude/docs/developpeur/cycle-vie-apps.md`
+
+#### Installation Apps (Post-Déploiement Obligatoire)
+
+**Après compilation et premier lancement, installer les Apps dans cet ordre** :
+
+**1. Se connecter**
+```
+URL : http://localhost:8080/
+Login : admin / admin
+```
+
+**2. Installer BASE** (obligatoire - ~30s)
+```
+Apps Management → BASE → Install
+Effet : Crée toutes les tables Axelor Open Suite (466 tables)
+```
+
+**3. Installer STUDIO** (fortement recommandé - ~20s)
+```
+Apps Management → STUDIO → Install
+Effet : Active outils low-code (custom fields, workflows, web services)
+```
+
+**4. Installer Apps Métier** (selon besoins - ~30s chacune)
+```
+Apps Management → CRM → Install     # Gestion relation client
+Apps Management → SALE → Install    # Cycle de vente
+Apps Management → PROJECT → Install # Gestion projets
+...
+```
+
+**Vérification Apps installées** :
+```sql
+SELECT code, name, active
+FROM studio_app
+ORDER BY active DESC, code;
+
+-- Résultat attendu :
+--  code    | name    | active
+-- ---------+---------+--------
+--  base    | Base    | t       ← ✅ Installée
+--  crm     | CRM     | t       ← ✅ Installée
+--  sale    | Sale    | t       ← ✅ Installée
+--  studio  | Studio  | t       ← ✅ Installée
+```
+
+⚠️ **Important** :
+- Les modules sont compilés dans le code mais **ne sont pas automatiquement installés**
+- Sans installation App, les menus CRM/Sales/etc. restent **invisibles**
+- L'installation BASE crée **toutes** les tables d'Axelor Open Suite
+- Les Apps suivantes **activent** seulement l'usage des tables existantes
 
 #### Option 2 : Docker (Test Rapide)
 

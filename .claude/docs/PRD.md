@@ -81,6 +81,25 @@ HPE ProLiant (100.124.143.6)
 
 ## 3. Roadmap Modules par Phases
 
+> **🔑 Note Importante : Module vs App**
+>
+> Dans Axelor, il existe une distinction critique entre **Module** (code) et **App** (application installée) :
+>
+> - **Module** : Code Java compilé via Gradle (configuré dans `settings.gradle`)
+> - **App** : Application installée et activée via Apps Management (enregistrée dans table `studio_app`)
+>
+> **Processus** :
+> 1. Les modules sont **compilés** lors du build Gradle ✅
+> 2. Au premier démarrage, BASE crée **toutes** les tables (466 tables) ✅
+> 3. Les Apps sont enregistrées en base avec `active=false` ⚠️
+> 4. **Installation manuelle requise** via Apps Management pour activer chaque App ⚠️
+>
+> **Conséquence** : Les sections ci-dessous parlent de "Modules à activer" mais techniquement il s'agit d'**installer les Apps** via l'interface Apps Management après le déploiement.
+>
+> 📖 **Documentation technique** : `.claude/docs/document-technique-axelor.md` section 2.2 Installation
+>
+> 📖 **Guide installation Apps** : `.claude/docs/developpeur/cycle-vie-apps.md`
+
 ### Phase 1 : Fondation - CRM & Ventes (0-3 mois)
 
 **Objectif** : Gérer le cycle commercial et premiers clients

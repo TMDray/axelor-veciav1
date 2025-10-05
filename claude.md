@@ -62,6 +62,9 @@ chore: Tâches maintenance (deps, config)
 ### Agents Spécialisés (`.claude/agents/`)
 
 - **agent-connexion-serveur.md** : Expert connexion serveur HPE via Tailscale VPN
+- **agent-deploiement-local.md** : Expert déploiement Axelor 8.3.15 local macOS
+- **agent-configuration-crm.md** : Expert configuration CRM, low-code Studio, personnalisation
+- **agent-data-management.md** : Expert gestion données (import/export CSV, init-data, migration)
 - **README.md** : Index et usage des agents
 
 ### Modules Axelor (`.claude/modules/`)
@@ -81,8 +84,17 @@ Commandes slash disponibles :
 
 ### Documentation (`.claude/docs/`)
 
+**Documentation Technique :**
 - **PRD.md** : Product Requirements Document (vision produit complète)
 - **document-technique-axelor.md** : Documentation technique Axelor 8.3.15
+- **premier-deploiement-local.md** : Retour d'expérience historique premier déploiement
+
+**Documentation Utilisateur (`.claude/docs/utilisateur/`) :**
+- **guide-administration-axelor.md** : Guide complet administration pour utilisateurs finaux
+
+**Documentation Développeur (`.claude/docs/developpeur/`) :**
+- **cycle-vie-apps.md** : Cycle de vie Apps Axelor (Module vs App, installation, base de données)
+- **README.md** : Index documentation développeur
 
 ## 🎯 Phase Actuelle : Phase 1 - CRM
 
@@ -165,6 +177,6 @@ Voir `.claude/docs/PRD.md` section "Configuration Métier Agence IA" pour :
 
 ---
 
-**Dernière mise à jour** : 2025-09-30
+**Dernière mise à jour** : 2025-10-03
 **Version Axelor** : 8.3.15
 **Phase** : Phase 1 - Setup & CRM

@@ -1,0 +1,70 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: axelor-vecia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: axelor_vecia
+      POSTGRES_USER: axelor
+      POSTGRES_PASSWORD: axelor
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - axelor-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U axelor -d axelor_vecia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Axelor Application
+  axelor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: axelor-vecia:dev
+    container_name: axelor-vecia-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=axelor_vecia
+      - DB_USER=axelor
+      - DB_PASSWORD=axelor
+      - APP_MODE=dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - axelor_data:/opt/axelor/data
+      - axelor_uploads:/opt/axelor/upload
+      - axelor_logs:/opt/axelor/logs
+      - ./src/main/resources/axelor-config.properties:/opt/axelor/axelor-config.properties:ro
+    networks:
+      - axelor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+networks:
+  axelor-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  axelor_data:
+    driver: local
+  axelor_uploads:
+    driver: local
+  axelor_logs:
+    driver: local

@@ -1,0 +1,79 @@
+# =============================================================================
+# Docker Compose - Serveur Test Ubuntu (HPE ProLiant)
+# Utilise l'infrastructure PostgreSQL existante (citeos-postgres)
+# =============================================================================
+
+services:
+  # Axelor Application
+  axelor:
+    image: axelor-vecia:latest
+    container_name: axelor-vecia-prod
+    restart: unless-stopped
+    environment:
+      # Database (PostgreSQL existant citeos-postgres)
+      - DB_HOST=citeos-postgres
+      - DB_PORT=5432
+      - DB_NAME=axelor_vecia
+      - DB_USER=axelor
+      - DB_PASSWORD=${DB_PASSWORD:-axelor}
+
+      # Application
+      - APP_MODE=prod
+      - APP_NAME=Axelor Vecia - Agence IA
+      - JAVA_OPTS=-Xms1024m -Xmx3072m -XX:+UseG1GC
+
+      # Timezone
+      - TZ=Europe/Paris
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      # Données persistantes
+      - axelor_vecia_data:/opt/axelor/data
+      - axelor_vecia_uploads:/opt/axelor/upload
+      - axelor_vecia_logs:/opt/axelor/logs
+
+      # Configuration (sera fournie lors du déploiement)
+      - ./application-prod.properties:/opt/axelor/axelor-config.properties:ro
+
+    networks:
+      - citeos-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s  # Prod plus long (migration DB)
+      retries: 5
+
+    labels:
+      - "com.axelor.project=vecia"
+      - "com.axelor.environment=test"
+      - "com.axelor.version=8.3.15"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  citeos-network:
+    external: true  # Réseau existant sur serveur (citeos-postgres, citeos-redis)
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  axelor_vecia_data:
+    driver: local
+    labels:
+      - "com.axelor.volume=data"
+
+  axelor_vecia_uploads:
+    driver: local
+    labels:
+      - "com.axelor.volume=uploads"
+
+  axelor_vecia_logs:
+    driver: local
+    labels:
+      - "com.axelor.volume=logs"
