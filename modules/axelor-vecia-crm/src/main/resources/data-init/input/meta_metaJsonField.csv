@@ -1,2 +1,0 @@
-"name";"title";"type";"model";"modelField";"selection";"sequence";"showIf";"visibleInGrid"
-"provenance";"Provenance";"string";"com.axelor.apps.base.db.Partner";"contactAttrs";"contact-provenance-select";0;"isContact == true";"true"

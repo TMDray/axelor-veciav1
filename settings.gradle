@@ -65,7 +65,7 @@ enabledModules.each { moduleName ->
 }
 
 // Add custom modules to appModules list
-def customModuleDir = file("modules/axelor-vecia-crm")
+def customModuleDir = file("modules/axelor-open-suite/axelor-vecia-crm")
 if (customModuleDir.exists() && new File(customModuleDir, "build.gradle").exists()) {
   modules.add(customModuleDir)
 }
