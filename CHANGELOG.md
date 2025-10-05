@@ -4,6 +4,20 @@
 - Custom CRM menus: All Partners and All Contacts (axelor-vecia-crm module)
 - Direct access to complete Partner and Contact lists from CRM main menu
 - Domain-filtered views for better UX
+- Docker multi-stage build with custom module support
+- Agent system: agent-docker-custom-modules v2.0.0 for Docker deployment validation
+- Knowledge base: kb-docker-custom-modules.md with deployment best practices
+
+### Fixed
+- **Critical**: Docker build now includes custom modules (Dockerfile COPY configuration)
+- **Critical**: Custom modules now properly packaged in WAR (settings.gradle appModules configuration)
+- Docker Desktop macOS port forwarding issue documented (requires restart after `--no-cache` builds)
+
+### Documentation
+- REX complet: Déploiement modules custom dans Docker (2 problèmes critiques identifiés et résolus)
+- Procédure de validation 7 niveaux (compilation → UI)
+- Scripts de pré-validation et post-déploiement
+- Analyse pattern bug Docker Desktop macOS (100% corrélation avec `--no-cache`)
 
 See `.claude/changelogs/studio-changelog.md` for detailed technical changes.
 

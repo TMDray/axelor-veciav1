@@ -15,6 +15,7 @@ This document is the **central inventory** of all configurations created in Axel
 | **Custom Fields** | 1 | 2025-10-03 |
 | **Selections** | 1 | 2025-10-03 |
 | **Custom Menus** | 2 | 2025-10-05 |
+| **Docker Deployments** | 1 | 2025-10-05 |
 | **BPM Workflows** | 0 | - |
 | **API Integrations** | 0 | - |
 | **Custom Models** | 0 | - |
@@ -141,8 +142,14 @@ created_date: 2025-10-03
 
 | Menu Name | Parent | Module | Model | Domain Filter | Created | Status |
 |-----------|--------|--------|-------|---------------|---------|--------|
-| `crm-all-partners` | crm-root | axelor-vecia-crm | Partner | `self.isContact = false` | 2025-10-05 | ✅ Active |
-| `crm-all-contacts` | crm-root | axelor-vecia-crm | Partner | `self.isContact = true AND self.isEmployee = false` | 2025-10-05 | ✅ Active |
+| `crm-all-partners` | crm-root | axelor-vecia-crm | Partner | `self.isContact = false` | 2025-10-05 | ✅ Deployed |
+| `crm-all-contacts` | crm-root | axelor-vecia-crm | Partner | `self.isContact = true AND self.isEmployee = false` | 2025-10-05 | ✅ Deployed |
+
+**Deployment Status**:
+- ✅ Module compiled and JAR present in WAR (validated 2025-10-05)
+- ✅ Menu.xml imported successfully
+- ✅ Menus visible in UI (http://localhost:8080 → CRM)
+- 📝 Deployment issues fixed: Dockerfile COPY + settings.gradle appModules
 
 **Details: crm-all-partners**
 
@@ -235,6 +242,63 @@ advantages:
 config_file: .claude/configs/crm-menus-config.yaml
 changelog_ref: .claude/changelogs/studio-changelog.md#unreleased
 ```
+
+---
+
+## 3.2 Docker Deployment Configuration
+
+**Custom Module Deployment** (2025-10-05)
+
+| Component | Configuration | Status | Documentation |
+|-----------|--------------|--------|---------------|
+| Dockerfile | `COPY modules/axelor-vecia-crm/` | ✅ Fixed | Dockerfile:25 |
+| settings.gradle | Module in `gradle.ext.appModules` | ✅ Fixed | settings.gradle:68-71 |
+| Validation | 7-level validation script | ✅ Implemented | `.claude/knowledge-bases/kb-docker-custom-modules.md` |
+| Agent | agent-docker-custom-modules v2.0.0 | ✅ Production | `.claude/agents/agent-docker-custom-modules.md` |
+
+**Critical Fixes Applied**:
+
+```yaml
+issue_1:
+  problem: "Module compiled locally but not in Docker WAR"
+  root_cause: "Dockerfile didn't COPY custom module sources before gradle build"
+  fix: "Added COPY modules/axelor-vecia-crm/ ./modules/axelor-vecia-crm/"
+  impact: "Module now compiles in Docker build stage"
+  time_to_diagnose: "45 min"
+
+issue_2:
+  problem: "Module compiled but JAR not included in WAR"
+  root_cause: "Module included in settings.gradle but not in gradle.ext.appModules"
+  fix: "Added module to modules list before appModules assignment"
+  impact: "JAR now packaged in WAR and deployed correctly"
+  time_to_diagnose: "60 min"
+
+docker_desktop_issue:
+  problem: "Port forwarding corruption after --no-cache rebuilds"
+  pattern: "100% correlation - 3/3 rebuilds corrupted port forwarding"
+  workaround: "Manual Docker Desktop restart required"
+  prevention: "Use incremental builds when possible, avoid --no-cache unless necessary"
+  reference: "docker/for-mac#3763"
+```
+
+**Deployment Validation**:
+```bash
+# Level 1: JAR compiled
+ls modules/axelor-vecia-crm/build/libs/*.jar
+# → axelor-vecia-crm-8.3.15.jar ✅
+
+# Level 2: JAR in WAR
+docker-compose exec axelor ls /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/ | grep vecia
+# → axelor-vecia-crm-8.3.15.jar ✅
+
+# Level 3-6: Automated validation script available
+# → See kb-docker-custom-modules.md
+```
+
+**REX Documentation**:
+- `/tmp/axelor-custom-module-docker-deployment.md` - Complete deployment timeline
+- `/tmp/docker-restart-analysis.md` - Port forwarding pattern analysis
+- `.claude/knowledge-bases/kb-docker-custom-modules.md` - Best practices & quick reference
 
 ---
 
@@ -402,8 +466,8 @@ See studio-changelog.md for details
 
 ---
 
-**Last updated**: 2025-10-03
+**Last updated**: 2025-10-05
 **Maintained by**: Configuration Team
-**Version**: 1.0.1
+**Version**: 1.1.0
 **Format**: Keep a Changelog + Semantic Versioning
 **Best Practices**: GitOps, Configuration as Code (2025)

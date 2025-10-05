@@ -64,12 +64,15 @@ enabledModules.each { moduleName ->
   }
 }
 
+// Add custom modules to appModules list
+def customModuleDir = file("modules/axelor-vecia-crm")
+if (customModuleDir.exists() && new File(customModuleDir, "build.gradle").exists()) {
+  modules.add(customModuleDir)
+}
+
 gradle.ext.appModules = modules
 
 modules.each { dir ->
   include "modules:$dir.name"
   project(":modules:$dir.name").projectDir = dir
 }
-
-// Custom Vecia module
-include ':modules:axelor-vecia-crm'
