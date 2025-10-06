@@ -18,8 +18,11 @@ COPY gradlew gradlew.bat ./
 # Copier buildSrc (si existe)
 COPY buildSrc/ ./buildSrc/
 
-# Copier modules Axelor Open Suite (includes custom axelor-vecia-crm)
+# Copier modules Axelor Open Suite
 COPY modules/axelor-open-suite/ ./modules/axelor-open-suite/
+
+# Copier modules customs
+COPY modules/axelor-vecia-crm/ ./modules/axelor-vecia-crm/
 
 # Copier sources de l'application
 COPY src/ ./src/

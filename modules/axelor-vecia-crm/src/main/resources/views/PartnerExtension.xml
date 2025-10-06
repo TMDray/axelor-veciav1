@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object-views xmlns="http://axelor.com/xml/ns/object-views"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://axelor.com/xml/ns/object-views
+  https://axelor.com/xml/ns/object-views/object-views_7.1.xsd">
+
+  <!-- ========================================= -->
+  <!-- Partner Views Extensions - Vecia AI -->
+  <!-- ========================================= -->
+
+  <!-- Extend Partner Contact Form View -->
+  <form name="partner-contact-form" extension="true">
+
+    <!-- Add Provenance field after Email Address -->
+    <extend target="//field[@name='emailAddress']">
+      <insert position="after">
+        <field name="$contactAttrs.provenance" title="Provenance" widget="selection"
+          showIf="isContact == true"/>
+      </insert>
+    </extend>
+
+  </form>
+
+  <!-- Extend Partner Contact Grid View -->
+  <grid name="partner-contact-grid" extension="true">
+
+    <!-- Add Provenance column after Mobile Phone -->
+    <extend target="//field[@name='mobilePhone']">
+      <insert position="after">
+        <field name="$contactAttrs.provenance" title="Provenance"/>
+      </insert>
+    </extend>
+
+  </grid>
+
+</object-views>
