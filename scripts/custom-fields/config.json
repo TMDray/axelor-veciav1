@@ -1,0 +1,23 @@
+{
+  "axelor_url": "http://localhost:8080",
+  "username": "admin",
+  "password": "admin",
+  "custom_fields": [
+    {
+      "name": "provenance",
+      "title": "Provenance",
+      "type": "string",
+      "model": "com.axelor.apps.base.db.Partner",
+      "modelField": "contactAttrs",
+      "selection": "contact-provenance-select",
+      "widget": "selection",
+      "sequence": 10,
+      "showIf": "isContact == true",
+      "visibleInGrid": true,
+      "required": false,
+      "readonly": false,
+      "hidden": false,
+      "help": "Source d'acquisition du contact (LinkedIn, Site Web, Recommandation, etc.)"
+    }
+  ]
+}
