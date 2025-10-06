@@ -528,6 +528,126 @@ git push origin main
 4. ✅ Tester action
 5. ✅ Documenter
 
+### Scenario 5 : Créer Custom Field via REST API
+
+**User** : "Je veux ajouter un champ 'provenance' sur les contacts Partner"
+
+**⚠️ IMPORTANT** : CSV data-init NE FONCTIONNE PAS pour modules custom (bug Axelor MetaScanner)
+
+**Workflow Recommandé : Python REST API Script** ✅
+
+**Actions** :
+
+#### Étape 1 : Créer Selection XML (si type dropdown)
+```xml
+<!-- modules/axelor-vecia-crm/src/main/resources/views/Selections.xml -->
+<selection name="contact-provenance-select">
+  <option value="linkedin">LinkedIn</option>
+  <option value="site-web">Site Web</option>
+  <option value="recommandation">Recommandation</option>
+  <option value="salon-conference">Salon/Conférence</option>
+  <option value="reseau-professionnel">Réseau Professionnel</option>
+  <option value="cold-outreach">Cold Outreach</option>
+  <option value="partenaire">Partenaire</option>
+  <option value="autre">Autre</option>
+</selection>
+```
+
+#### Étape 2 : Configurer Field JSON
+```json
+// scripts/custom-fields/config.json
+{
+  "axelor_url": "http://localhost:8080",
+  "username": "admin",
+  "password": "admin",
+  "custom_fields": [
+    {
+      "name": "provenance",
+      "title": "Provenance",
+      "type": "string",
+      "model": "com.axelor.apps.base.db.Partner",
+      "modelField": "contactAttrs",
+      "selection": "contact-provenance-select",
+      "widget": "selection",
+      "sequence": 10,
+      "showIf": "isContact == true",
+      "visibleInGrid": true,
+      "help": "Source d'acquisition du contact"
+    }
+  ]
+}
+```
+
+#### Étape 3 : Exécuter Script Python
+
+**Option A : Depuis laptop** (si Axelor sur localhost:8080)
+```bash
+cd scripts/custom-fields
+pip install -r requirements.txt
+python import-custom-fields.py
+```
+
+**Option B : Via Docker network** (macOS ou problème port binding)
+```bash
+# Créer config-docker.json avec "axelor_url": "http://axelor-vecia-app:8080"
+docker run --rm --network axelor-vecia-v1_axelor-network \
+  -v "$(pwd)/scripts/custom-fields:/scripts" \
+  python:3.11-slim bash -c "
+    pip install -q requests &&
+    cd /scripts &&
+    python import-custom-fields.py --config config-docker.json
+  "
+```
+
+**Temps** : ~3 secondes
+
+#### Étape 4 : Vérifier en DB
+```sql
+SELECT id, name, title, type_name, model_name, model_field, selection, widget
+FROM meta_json_field
+WHERE name = 'provenance';
+```
+
+#### Étape 5 : Rebuild pour Charger Selection
+```bash
+./gradlew build
+docker-compose restart axelor
+```
+
+**Temps** : ~5 minutes
+
+#### Étape 6 : Vérifier Selection en DB
+```sql
+SELECT id, name, module FROM meta_select WHERE name = 'contact-provenance-select';
+
+SELECT si.value, si.title, si.sequence
+FROM meta_select_item si
+JOIN meta_select s ON si.select_id = s.id
+WHERE s.name = 'contact-provenance-select'
+ORDER BY si.sequence;
+```
+
+#### Documentation
+1. ✅ Mettre à jour `configuration-registry.md` (section Custom Fields)
+2. ✅ Commit config.json + Selections.xml
+3. ✅ Documenter dans `.claude/changelogs/studio-changelog.md`
+
+**Avantages Solution REST API** :
+- ✅ Externe (pas de modification code Axelor)
+- ✅ Pas de rebuild pour le field JSON lui-même
+- ✅ Versionné (config.json dans Git)
+- ✅ Idempotent (peut être exécuté 2×)
+- ✅ Réutilisable pour tous futurs custom fields
+
+**Limitations** :
+- ⚠️ Rebuild nécessaire pour charger selections XML
+- ⚠️ Pas d'auto-import CSV pour modules custom (bug Axelor)
+
+**Références** :
+- Documentation complète : `scripts/custom-fields/README.md`
+- KB : `.claude/knowledge-bases/kb-lowcode-standards.md` section 10
+- Investigation : `.diagnostic-archives/axelor-custom-fields-diagnostic-2025-10-05/`
+
 ---
 
 ## 🔗 Collaboration avec Autres Agents

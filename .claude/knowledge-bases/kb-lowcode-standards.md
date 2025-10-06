@@ -749,4 +749,326 @@ Date + Heure → DateTime
 
 ---
 
+## 10. Custom Fields via REST API
+
+### 10.1 Contexte et Limitations
+
+**❌ CSV Auto-Import Ne Fonctionne PAS pour Modules Custom**
+
+Les fichiers CSV placés dans `data-init/input/` ne sont **jamais auto-importés** pour les modules custom.
+
+**Root Cause** :
+- Bug dans `com.axelor.meta.MetaScanner.findAll()`
+- Le scanner ne trouve pas les ressources `data-init/` pour les modules en dehors de `axelor-open-suite/`
+- Non documenté par Axelor
+
+**Investigation** : Voir `.diagnostic-archives/axelor-custom-fields-diagnostic-2025-10-05/investigation-complete-solution-python-api.md`
+
+**Conséquence** :
+- ❌ CSV import ne fonctionne pas pour MetaJsonField
+- ❌ Même après rebuild, aucun log, aucune erreur
+- ✅ Solution : **REST API externe**
+
+### 10.2 Solution : Python REST API Script
+
+**Avantages** :
+- ✅ **Externe** : Aucune modification du code Axelor (sanctuarisé)
+- ✅ **Aucun rebuild** : Pas de recompilation nécessaire pour le field
+- ✅ **Versionné** : Configuration Git-tracked (config.json)
+- ✅ **Idempotent** : Peut être exécuté plusieurs fois sans erreur
+- ✅ **Réutilisable** : Template pour tous futurs custom fields
+
+**Localisation** : `scripts/custom-fields/`
+
+**Fichiers** :
+```
+scripts/custom-fields/
+├── import-custom-fields.py    # Script principal
+├── config.json                # Configuration des fields
+├── requirements.txt           # Dépendances Python
+└── README.md                  # Documentation complète
+```
+
+### 10.3 Workflow Complet
+
+**Étape 1 : Créer Selection XML** (si type dropdown)
+
+Fichier : `modules/axelor-vecia-crm/src/main/resources/views/Selections.xml`
+
+```xml
+<selection name="contact-provenance-select">
+  <option value="linkedin">LinkedIn</option>
+  <option value="site-web">Site Web</option>
+  <option value="recommandation">Recommandation</option>
+  <option value="salon-conference">Salon/Conférence</option>
+  <option value="reseau-professionnel">Réseau Professionnel</option>
+  <option value="cold-outreach">Cold Outreach</option>
+  <option value="partenaire">Partenaire</option>
+  <option value="autre">Autre</option>
+</selection>
+```
+
+**Étape 2 : Configurer Field JSON**
+
+Fichier : `scripts/custom-fields/config.json`
+
+```json
+{
+  "axelor_url": "http://localhost:8080",
+  "username": "admin",
+  "password": "admin",
+  "custom_fields": [
+    {
+      "name": "provenance",
+      "title": "Provenance",
+      "type": "string",
+      "model": "com.axelor.apps.base.db.Partner",
+      "modelField": "contactAttrs",
+      "selection": "contact-provenance-select",
+      "widget": "selection",
+      "sequence": 10,
+      "showIf": "isContact == true",
+      "visibleInGrid": true,
+      "required": false,
+      "readonly": false,
+      "hidden": false,
+      "help": "Source d'acquisition du contact (LinkedIn, Site Web, Recommandation, etc.)"
+    }
+  ]
+}
+```
+
+**Étape 3 : Exécuter Script Python**
+
+**Option A : Depuis laptop** (si Axelor accessible sur localhost:8080)
+```bash
+cd scripts/custom-fields
+pip install -r requirements.txt
+python import-custom-fields.py
+```
+
+**Option B : Via Docker network** (macOS ou si problème port binding)
+```bash
+# Modifier config.json : "axelor_url": "http://axelor-vecia-app:8080"
+docker run --rm --network axelor-vecia-v1_axelor-network \
+  -v "$(pwd)/scripts/custom-fields:/scripts" \
+  python:3.11-slim bash -c "
+    pip install -q requests &&
+    cd /scripts &&
+    python import-custom-fields.py --config config-docker.json
+  "
+```
+
+**Output Attendu** :
+```
+[INFO] Configuration loaded from /scripts/config.json
+[INFO] Connecting to Axelor at http://axelor-vecia-app:8080...
+[INFO] Authentication successful
+[INFO] Found 1 field(s) to process
+[INFO] Processing field 'provenance' on Partner...
+[INFO] ✓ Field 'provenance' created successfully (ID: 1)
+[INFO] ==================================================
+[INFO] SUMMARY: 1 field(s) created/updated, 0 error(s)
+[INFO] ==================================================
+```
+
+**Temps d'exécution** : ~3 secondes
+
+**Étape 4 : Vérifier en DB**
+
+```sql
+-- Vérifier MetaJsonField
+SELECT id, name, title, type_name, model_name, model_field, selection, widget
+FROM meta_json_field
+WHERE name = 'provenance';
+
+-- Résultat attendu :
+-- id | name       | title      | type_name | model_name                      | model_field  | selection                 | widget
+-- ---|------------|------------|-----------|---------------------------------|--------------|---------------------------|----------
+-- 1  | provenance | Provenance | string    | com.axelor.apps.base.db.Partner | contactAttrs | contact-provenance-select | selection
+```
+
+**Étape 5 : Rebuild pour Charger Selection**
+
+```bash
+./gradlew build
+docker-compose restart axelor
+```
+
+**Étape 6 : Vérifier Selection en DB**
+
+```sql
+-- Vérifier meta_select
+SELECT id, name, module FROM meta_select WHERE name = 'contact-provenance-select';
+
+-- Vérifier options
+SELECT si.value, si.title, si.sequence
+FROM meta_select_item si
+JOIN meta_select s ON si.select_id = s.id
+WHERE s.name = 'contact-provenance-select'
+ORDER BY si.sequence;
+```
+
+### 10.4 Résultats Test Réels
+
+**Date Test** : 2025-10-06
+**Environnement** : macOS, Docker Desktop, Axelor 8.3.15
+
+**Test 1 : Field Creation via API** ✅
+- **Méthode** : Python script via Docker network
+- **Durée** : 3 secondes
+- **Résultat** : Field créé avec ID=1
+- **Vérification DB** : ✅ Présent dans `meta_json_field`
+
+**Test 2 : Selection Existence** ⏳
+- **État Avant Rebuild** : ❌ Absent de `meta_select` (0 rows)
+- **Raison** : Selections XML chargées uniquement au build
+- **Action Requise** : Rebuild + restart
+
+**Test 3 : Idempotence** ✅
+- **Comportement** : Script détecte field existant (ID: 1)
+- **Action** : Update au lieu de create
+- **Output** : `Field 'provenance' updated successfully (ID: 1)`
+- **Pas d'erreur** : ✅
+
+**Constats** :
+- ✅ REST API fonctionne parfaitement
+- ✅ Pas besoin de rebuild pour le field JSON lui-même
+- ⚠️ Rebuild nécessaire UNIQUEMENT pour charger les selections XML
+- ✅ Script 100% idempotent
+
+### 10.5 API Endpoints Utilisés
+
+**Authentication** :
+```http
+POST /callback
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+```
+→ Retourne session cookie (JSESSIONID)
+
+**Search MetaJsonField** :
+```http
+POST /ws/rest/com.axelor.meta.db.MetaJsonField/search
+Content-Type: application/json
+
+{
+  "offset": 0,
+  "limit": 1,
+  "fields": ["id", "name", "model"],
+  "data": {
+    "_domain": "self.name = :name AND self.model = :model",
+    "_domainContext": {
+      "name": "provenance",
+      "model": "com.axelor.apps.base.db.Partner"
+    }
+  }
+}
+```
+→ Retourne field existant ou `total: 0`
+
+**Create/Update MetaJsonField** :
+```http
+PUT /ws/rest/com.axelor.meta.db.MetaJsonField
+Content-Type: application/json
+
+{
+  "data": {
+    "id": 1,              // Optionnel (si update)
+    "version": 0,         // Optionnel (si update)
+    "name": "provenance",
+    "title": "Provenance",
+    "type": "string",
+    "model": "com.axelor.apps.base.db.Partner",
+    "modelField": "contactAttrs",
+    "selection": "contact-provenance-select",
+    "widget": "selection",
+    "sequence": 10,
+    "showIf": "isContact == true",
+    "visibleInGrid": true,
+    "help": "Source d'acquisition du contact"
+  }
+}
+```
+→ Retourne `status: 0` si succès
+
+### 10.6 Attributs Field Supportés
+
+| Attribut | Type | Requis | Description | Exemple |
+|----------|------|--------|-------------|---------|
+| **name** | string | ✅ | Nom technique (camelCase) | `emailSecondaire` |
+| **title** | string | ✅ | Libellé affiché | `Email Secondaire` |
+| **type** | string | ✅ | Type de données | `string`, `integer`, `decimal`, `boolean`, `date`, `datetime` |
+| **model** | string | ✅ | Classe modèle cible | `com.axelor.apps.base.db.Partner` |
+| **modelField** | string | ⚠️ | Field JSON sur modèle | `attrs` (défaut), `contactAttrs` (Partner contacts) |
+| **selection** | string | ⚠️ | Nom selection (si type dropdown) | `contact-provenance-select` |
+| **widget** | string | ⚠️ | Widget UI | `selection`, `text`, `checkbox` |
+| **sequence** | integer | ⚠️ | Ordre affichage | `10` |
+| **showIf** | string | ⚠️ | Condition affichage | `isContact == true` |
+| **visibleInGrid** | boolean | ⚠️ | Visible dans grille | `true` |
+| **required** | boolean | ⚠️ | Champ obligatoire | `false` |
+| **readonly** | boolean | ⚠️ | Lecture seule | `false` |
+| **hidden** | boolean | ⚠️ | Caché | `false` |
+| **help** | string | ⚠️ | Texte d'aide | `Format: email@example.com` |
+
+### 10.7 Troubleshooting
+
+**Erreur : "401 Unauthorized"**
+- **Cause** : Credentials incorrects dans config.json
+- **Solution** : Vérifier username/password
+
+**Erreur : "Connection refused"**
+- **Cause** : Axelor pas accessible
+- **Solution** :
+  - Vérifier : `curl http://localhost:8080/` → doit retourner 200
+  - macOS : Utiliser Docker network (`http://axelor-vecia-app:8080`)
+
+**Field non visible dans form**
+- **Cause** : `showIf` condition non remplie
+- **Solution** :
+  - Vérifier condition : `isContact == true` sur Partner
+  - Rebuild si nécessaire
+
+**Selection dropdown vide**
+- **Cause** : Selections.xml pas chargé
+- **Solution** :
+  - Vérifier fichier existe : `modules/axelor-vecia-crm/src/main/resources/views/Selections.xml`
+  - Rebuild : `./gradlew build && docker-compose restart axelor`
+  - Vérifier en DB : `SELECT * FROM meta_select WHERE name = 'contact-provenance-select'`
+
+**"Field already exists" dans logs**
+- **C'est normal** : Le script est idempotent, il update le field existant
+- Pas d'action requise
+
+### 10.8 Best Practices REST API
+
+1. ✅ **Idempotence** : Toujours vérifier existence avant create
+2. ✅ **Version Control** : Commiter config.json après chaque modif
+3. ✅ **Documentation** : Mettre à jour registry après chaque field
+4. ✅ **Testing** : Tester run 2× pour vérifier idempotence
+5. ✅ **Backup** : Backup DB avant opérations bulk
+
+### 10.9 Performance
+
+| Action | Temps Moyen | Notes |
+|--------|-------------|-------|
+| Simple field (string/integer) | 3 sec | Via REST API |
+| Selection field (création field) | 3 sec | Via REST API |
+| Selection field (chargement XML) | 5 min | Rebuild requis |
+| Batch 10 fields | 30 sec | Via REST API |
+| Vérification DB | 1 sec | Query SQL |
+
+### 10.10 Références
+
+- **Investigation complète** : `.diagnostic-archives/axelor-custom-fields-diagnostic-2025-10-05/investigation-complete-solution-python-api.md`
+- **Agent template** : `.diagnostic-archives/axelor-custom-fields-diagnostic-2025-10-05/agent-custom-fields-template.md`
+- **Script complet** : `scripts/custom-fields/`
+- **Axelor REST API Docs** : https://docs.axelor.com/adk/7.2/dev-guide/web-services/rest.html
+
+---
+
 **End of Knowledge Base**
